@@ -1,17 +1,23 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Linq;
-
+using Photon.Pun;
+using Photon.Realtime;
+using UnityEngine.UI;
 public class CardDistribution : MonoBehaviour
 {
     private Dictionary<string, List<int>> deckofCards;
-    public bool a = true;
     int n_hearts = 13;
     int n_clubs = 13;
     int n_spades = 13;
     int n_diamonds = 13;
-//Had to declare once and for all here because in the block it initializes everytime it is called and is most likely to give the same values again and again
+
+    [SerializeField]
+    private Text cardsGotText;
+
+    private PhotonView PV;
+
+    //Had to declare once and for all here because in the block it initializes everytime it is called and is most likely to give the same values again and again
     System.Random rand = new System.Random();
 
     void Start()
@@ -24,69 +30,96 @@ public class CardDistribution : MonoBehaviour
             { "Spades", new List<int>{1,2,3,4,5,6,7,8,9,10,11,12,13 } } ,
             { "Diamonds", new List<int>{1,2,3,4,5,6,7,8,9,10,11,12,13 } } 
         };
+
+        PV = this.GetComponent<PhotonView>();
+
     }
 
-    void Update()
+    public void OnStartButtonClick()
     {
+    /**foreach (int d in deckofCards["Hearts"])
+        Debug.Log("Hearts: " + d);
+    foreach (int d in deckofCards["Clubs"])
+        Debug.Log("Clubs:" + d);
+    foreach (int d in deckofCards["Diamonds"])
+        Debug.Log("Diamonds: " + d);
+    foreach (int d in deckofCards["Spades"])
+        Debug.Log("Spades: " + d);**/
 
+        int numberOfPlayers = PhotonNetwork.CurrentRoom.PlayerCount;
 
-        /**foreach (int d in deckofCards["Hearts"])
-            Debug.Log("Hearts: " + d);
-        foreach (int d in deckofCards["Clubs"])
-            Debug.Log("Clubs:" + d);
-        foreach (int d in deckofCards["Diamonds"])
-            Debug.Log("Diamonds: " + d);
-        foreach (int d in deckofCards["Spades"])
-            Debug.Log("Spades: " + d);**/
-        if (a)
+        switch (numberOfPlayers)
         {
-            int numberOfPlayers = 3;
-            switch (numberOfPlayers)
-            {
-                case 1:
-                    List<int> firstPlayer = new List<int>();
-                    firstPlayer = RandomDistributor(firstPlayer);
+            case 1:
+                List<int> firstPlayer = new List<int>();
+                firstPlayer = RandomDistributor(firstPlayer);
 
-                    break;
-                case 2:
-                    List<int> firstPlayer2 = new List<int>();
-                    firstPlayer2 = RandomDistributor(firstPlayer2);
-           
-                    List<int> secondPlayer2 = new List<int>();
-                    secondPlayer2 = RandomDistributor(secondPlayer2);
- 
-                    break;
-                case 3:
-                    List<int> firstPlayer3 = new List<int>();
-                    firstPlayer3 = RandomDistributor(firstPlayer3);
+                break;
+            case 2:
+                List<int> firstPlayer2v2 = new List<int>();
+                firstPlayer2v2 = RandomDistributor(firstPlayer2v2);
+                ExitGames.Client.Photon.Hashtable propertiesP1 = new ExitGames.Client.Photon.Hashtable();
+                propertiesP1.Add("SetOfCards", firstPlayer2v2);
+                PhotonNetwork.PlayerList[0].CustomProperties = propertiesP1;
+                foreach (DictionaryEntry ele1 in propertiesP1)
+                    Debug.Log(ele1.Value);
+                List<int> secondPlayer2v2 = new List<int>();
+                secondPlayer2v2 = RandomDistributor(secondPlayer2v2);
+                ExitGames.Client.Photon.Hashtable propertiesP2 = new ExitGames.Client.Photon.Hashtable();
+                propertiesP2.Add("SetOfCards", secondPlayer2v2);
+                PhotonNetwork.PlayerList[1].CustomProperties = propertiesP2;
+                foreach (DictionaryEntry ele2 in propertiesP2)
+                    Debug.Log(ele2.Value);
 
-                    List<int> secondPlayer3 = new List<int>();
-                    secondPlayer3 = RandomDistributor(secondPlayer3);
+                break;
+            case 3:
+                List<int> firstPlayer3 = new List<int>();
+                firstPlayer3 = RandomDistributor(firstPlayer3);
 
-                    List<int> thirdPlayer3 = new List<int>();
-                    thirdPlayer3 = RandomDistributor(thirdPlayer3);
+                List<int> secondPlayer3 = new List<int>();
+                secondPlayer3 = RandomDistributor(secondPlayer3);
 
-                    break;
-                case 4:
-                    List<int> firstPlayer4 = new List<int>();
-                    firstPlayer4 = RandomDistributor(firstPlayer4);
+                List<int> thirdPlayer3 = new List<int>();
+                thirdPlayer3 = RandomDistributor(thirdPlayer3);
 
-                    List<int> secondPlayer4 = new List<int>();
-                    secondPlayer4 = RandomDistributor(secondPlayer4);
+                break;
+            case 4:
+                List<int> firstPlayer4 = new List<int>();
+                firstPlayer4 = RandomDistributor(firstPlayer4);
 
-                    List<int> thirdPlayer4 = new List<int>();
-                    thirdPlayer4 = RandomDistributor(thirdPlayer4);
+                List<int> secondPlayer4 = new List<int>();
+                secondPlayer4 = RandomDistributor(secondPlayer4);
 
-                    List<int> fourthPlayer4 = new List<int>();
-                    fourthPlayer4 = RandomDistributor(fourthPlayer4);
+                List<int> thirdPlayer4 = new List<int>();
+                thirdPlayer4 = RandomDistributor(thirdPlayer4);
 
-                    break;
-                default:
-                    break;
-            }
-            a = false;
+                List<int> fourthPlayer4 = new List<int>();
+                fourthPlayer4 = RandomDistributor(fourthPlayer4);
+
+                break;
+            default:
+                break;
+        }
+        //for(int i = 0; i < 2; i++)
+        //    setPlayerInfo(PhotonNetwork.PlayerList[i]);
+      //  PV.RPC("RPC_function", RpcTarget.All, true);
+    }
+
+    [PunRPC]
+    public void RPC_function(bool update)
+    {
+        if (update)
+        {
+            string c = "";
+            List<int> b = (List<int>)PhotonNetwork.PlayerList[1].CustomProperties["SetOfCards"];
+
+            foreach (int i in b)
+                c = c + "  " + i.ToString();
+            cardsGotText.text = c;
+            update = false;
         }
     }
+
 
     #region TeenPattiDistributor
     private List<int> RandomDistributor(List<int>groupOfThreeCards)
