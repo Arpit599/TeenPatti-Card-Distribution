@@ -1,10 +1,12 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine.UI;
-public class CardDistribution : MonoBehaviour
+using System;
+
+public class CardDistribution : MonoBehaviourPun
 {
     private Dictionary<string, List<int>> deckofCards;
     int n_hearts = 13;
@@ -14,9 +16,14 @@ public class CardDistribution : MonoBehaviour
 
     [SerializeField]
     private Text cardsGotText;
+    //private Text cardsGotText;
+    int[] currentPlayerSetOfcards = new int[3];
 
+    List<int> firstPlayer2v2 = new List<int>();
+    List<int> secondPlayer2v2 = new List<int>();
     private PhotonView PV;
-
+    string set = "";
+    int[] arr = new int[3];
     //Had to declare once and for all here because in the block it initializes everytime it is called and is most likely to give the same values again and again
     System.Random rand = new System.Random();
 
@@ -30,23 +37,13 @@ public class CardDistribution : MonoBehaviour
             { "Spades", new List<int>{1,2,3,4,5,6,7,8,9,10,11,12,13 } } ,
             { "Diamonds", new List<int>{1,2,3,4,5,6,7,8,9,10,11,12,13 } } 
         };
-
         PV = this.GetComponent<PhotonView>();
-
     }
 
     public void OnStartButtonClick()
     {
-    /**foreach (int d in deckofCards["Hearts"])
-        Debug.Log("Hearts: " + d);
-    foreach (int d in deckofCards["Clubs"])
-        Debug.Log("Clubs:" + d);
-    foreach (int d in deckofCards["Diamonds"])
-        Debug.Log("Diamonds: " + d);
-    foreach (int d in deckofCards["Spades"])
-        Debug.Log("Spades: " + d);**/
 
-        int numberOfPlayers = PhotonNetwork.CurrentRoom.PlayerCount;
+        int numberOfPlayers = PhotonNetwork.CurrentRoom.PlayerCount;  
 
         switch (numberOfPlayers)
         {
@@ -55,21 +52,9 @@ public class CardDistribution : MonoBehaviour
                 firstPlayer = RandomDistributor(firstPlayer);
 
                 break;
-            case 2:
-                List<int> firstPlayer2v2 = new List<int>();
+            case 2:               
                 firstPlayer2v2 = RandomDistributor(firstPlayer2v2);
-                ExitGames.Client.Photon.Hashtable propertiesP1 = new ExitGames.Client.Photon.Hashtable();
-                propertiesP1.Add("SetOfCards", firstPlayer2v2);
-                PhotonNetwork.PlayerList[0].CustomProperties = propertiesP1;
-                foreach (DictionaryEntry ele1 in propertiesP1)
-                    Debug.Log(ele1.Value);
-                List<int> secondPlayer2v2 = new List<int>();
                 secondPlayer2v2 = RandomDistributor(secondPlayer2v2);
-                ExitGames.Client.Photon.Hashtable propertiesP2 = new ExitGames.Client.Photon.Hashtable();
-                propertiesP2.Add("SetOfCards", secondPlayer2v2);
-                PhotonNetwork.PlayerList[1].CustomProperties = propertiesP2;
-                foreach (DictionaryEntry ele2 in propertiesP2)
-                    Debug.Log(ele2.Value);
 
                 break;
             case 3:
@@ -100,24 +85,19 @@ public class CardDistribution : MonoBehaviour
             default:
                 break;
         }
-        //for(int i = 0; i < 2; i++)
-        //    setPlayerInfo(PhotonNetwork.PlayerList[i]);
-      //  PV.RPC("RPC_function", RpcTarget.All, true);
+
+        object[] MyobjArray = {firstPlayer2v2.ToArray(), secondPlayer2v2.ToArray()};
+        if(PV.IsMine)
+        PV.RPC("RPC_function", RpcTarget.All, MyobjArray);
     }
 
     [PunRPC]
-    public void RPC_function(bool update)
+    public void RPC_function(params object[] obj)
     {
-        if (update)
-        {
-            string c = "";
-            List<int> b = (List<int>)PhotonNetwork.PlayerList[1].CustomProperties["SetOfCards"];
-
-            foreach (int i in b)
-                c = c + "  " + i.ToString();
-            cardsGotText.text = c;
-            update = false;
-        }
+        arr = (int[])obj[PhotonNetwork.LocalPlayer.ActorNumber - 1];
+        foreach (int i in arr)
+            set = set + " " + i.ToString();
+        cardsGotText.text = set;
     }
 
 
@@ -163,7 +143,7 @@ public class CardDistribution : MonoBehaviour
             List<int> temp = new List<int>(deckofCards[RandKey]);  //Copying the selected list into a temp list           
 
             groupOfThreeCards.Add(temp[randomCardNumber]);
-            Debug.Log(RandKey + " " + temp[randomCardNumber]);
+            //Debug.Log(RandKey + " " + temp[randomCardNumber]);
             temp.RemoveAt(randomCardNumber);
             deckofCards[RandKey] = temp;  //Copying into the original list 
            // prevRandKey = RandKey;           
@@ -172,3 +152,4 @@ public class CardDistribution : MonoBehaviour
     }
     #endregion
 }
+
