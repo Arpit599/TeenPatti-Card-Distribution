@@ -1,10 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
-using Photon.Realtime;
 using UnityEngine.UI;
-using System;
 
 public class CardDistribution : MonoBehaviourPun
 {
@@ -15,15 +12,14 @@ public class CardDistribution : MonoBehaviourPun
     int n_diamonds = 13;
 
     [SerializeField]
-    private Text cardsGotText;
-    //private Text cardsGotText;
-    int[] currentPlayerSetOfcards = new int[3];
+    private Text cardsGot_Text;
 
     List<int> firstPlayer2v2 = new List<int>();
     List<int> secondPlayer2v2 = new List<int>();
     private PhotonView PV;
-    string set = "";
-    int[] arr = new int[3];
+    string cardsToDisp = "";
+    int[] cardsGot_array = new int[3];
+
     //Had to declare once and for all here because in the block it initializes everytime it is called and is most likely to give the same values again and again
     System.Random rand = new System.Random();
 
@@ -43,79 +39,43 @@ public class CardDistribution : MonoBehaviourPun
     public void OnStartButtonClick()
     {
 
-        int numberOfPlayers = PhotonNetwork.CurrentRoom.PlayerCount;  
+        int numberOfPlayers = PhotonNetwork.CurrentRoom.PlayerCount;
+        List<int>[] Players = new List<int>[numberOfPlayers];  //Making an array of list of type int in order to make my code scalable for n number of players and each element will have different set of 3 cards assigned to them
 
-        switch (numberOfPlayers)
+        for (int i = 0; i < numberOfPlayers; i++)
         {
-            case 1:
-                List<int> firstPlayer = new List<int>();
-                firstPlayer = RandomDistributor(firstPlayer);
-
-                break;
-            case 2:               
-                firstPlayer2v2 = RandomDistributor(firstPlayer2v2);
-                secondPlayer2v2 = RandomDistributor(secondPlayer2v2);
-
-                break;
-            case 3:
-                List<int> firstPlayer3 = new List<int>();
-                firstPlayer3 = RandomDistributor(firstPlayer3);
-
-                List<int> secondPlayer3 = new List<int>();
-                secondPlayer3 = RandomDistributor(secondPlayer3);
-
-                List<int> thirdPlayer3 = new List<int>();
-                thirdPlayer3 = RandomDistributor(thirdPlayer3);
-
-                break;
-            case 4:
-                List<int> firstPlayer4 = new List<int>();
-                firstPlayer4 = RandomDistributor(firstPlayer4);
-
-                List<int> secondPlayer4 = new List<int>();
-                secondPlayer4 = RandomDistributor(secondPlayer4);
-
-                List<int> thirdPlayer4 = new List<int>();
-                thirdPlayer4 = RandomDistributor(thirdPlayer4);
-
-                List<int> fourthPlayer4 = new List<int>();
-                fourthPlayer4 = RandomDistributor(fourthPlayer4);
-
-                break;
-            default:
-                break;
+            Players[i] = RandomDistributor();
         }
 
-        object[] MyobjArray = {firstPlayer2v2.ToArray(), secondPlayer2v2.ToArray()};
-        if(PV.IsMine)
-        PV.RPC("RPC_function", RpcTarget.All, MyobjArray);
+        object[] MyobjArray = new object[numberOfPlayers];
+        for (int j = 0; j < numberOfPlayers; j++)
+        {
+            MyobjArray[j] = Players[j].ToArray();
+        }
+
+        if (PV.IsMine)
+            PV.RPC("RPC_function", RpcTarget.All, MyobjArray);
     }
 
     [PunRPC]
     public void RPC_function(params object[] obj)
     {
-        arr = (int[])obj[PhotonNetwork.LocalPlayer.ActorNumber - 1];
-        foreach (int i in arr)
-            set = set + " " + i.ToString();
-        cardsGotText.text = set;
+        cardsGot_array = (int[])obj[PhotonNetwork.LocalPlayer.ActorNumber - 1];
+        foreach (int i in cardsGot_array)
+            cardsToDisp = cardsToDisp + " " + i.ToString();
+        cardsGot_Text.text = cardsToDisp;
     }
 
-
     #region TeenPattiDistributor
-    private List<int> RandomDistributor(List<int>groupOfThreeCards)
+    private List<int> RandomDistributor()
     {
         string RandKey;           // To generate random suits
-       // string prevRandKey = "";  // To make sure previous random selected suit is not equal to the current selected suit
+        List<int> groupOfThreeCards = new List<int>();
 
         for (int i = 0; i < 3; i++)
         {
             List<string> keysList = new List<string>(deckofCards.Keys); //Collecting the availabel keys(suits) from the deckofCards dictionary
-
             RandKey = keysList[rand.Next(4)];
-
-           // while (prevRandKey == RandKey)
-           //     RandKey = keysList[rand.Next(4)];
-
             int randomCardNumber = -1;
 
             switch (RandKey)
@@ -141,15 +101,11 @@ public class CardDistribution : MonoBehaviourPun
             }
 
             List<int> temp = new List<int>(deckofCards[RandKey]);  //Copying the selected list into a temp list           
-
             groupOfThreeCards.Add(temp[randomCardNumber]);
-            //Debug.Log(RandKey + " " + temp[randomCardNumber]);
             temp.RemoveAt(randomCardNumber);
             deckofCards[RandKey] = temp;  //Copying into the original list 
-           // prevRandKey = RandKey;           
         }       
         return groupOfThreeCards;
     }
     #endregion
 }
-
